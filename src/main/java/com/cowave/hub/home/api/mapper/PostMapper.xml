@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0.txt
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and limitations under the License.
+
+-->
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.cowave.hub.home.api.mapper.PostMapper">
+    <resultMap id="postMap" type="com.cowave.hub.home.api.entity.PostInfo">
+        <result property="id"          column="id"         />
+        <result property="title"       column="title"      />
+        <result property="summary"     column="summary"    />
+        <result property="image"       column="image"      />
+        <result property="tags"        column="tags"       />
+        <result property="slider"      column="slider"     />
+        <result property="status"      column="status"     />
+        <result property="featured"    column="featured"   />
+        <result property="original"    column="original"   />
+        <result property="views"       column="views"      />
+        <result property="favors"      column="favors"     />
+        <result property="comments"    column="comments"   />
+        <result property="pwd"         column="pwd"        />
+        <result property="channelId"   column="channel_id" />
+        <result property="categoryId"  column="category_id"/>
+        <result property="createUser"  column="create_user"/>
+        <result property="createTime"  column="create_time"/>
+        <result property="updateTime"  column="update_time"/>
+        <result property="categoryName" column="categoryName"/>
+        <result property="channelName" column="channelName"/>
+        <result property="username"    column="username"   />
+        <result property="avatar"      column="avatar"     />
+    </resultMap>
+
+    <sql id="postField">
+        p.id,
+        p.title,
+        coalesce(p.summary,'暂无摘要') as summary,
+        p.image,
+        p.slider,
+        p.status,
+        p.featured,
+        p.original,
+        p.views,
+        p.favors,
+        p.pwd,
+        p.channel_id,
+        p.category_id,
+        p.create_user,
+        p.create_time,
+        p.update_time
+    </sql>
+
+    <select id="queryPostPage" resultMap="postMap">
+        select
+        c.name as categoryName,
+        (select count(1) from post_comment pc where pc.post_id = p.id) as comments,
+        <include refid="postField"/>
+        from post_info p
+        left join info_category c on p.category_id = c.id
+        <where>
+            and p.status = 1
+            <if test="post.categoryId != '' and post.categoryId != null">
+                and p.category_id = #{post.categoryId}
+            </if>
+            <if test="post.channelId != '' and post.channelId != null">
+                and p.channel_id = #{post.channelId}
+            </if>
+            <if test="post.slider != '' and post.slider != null">
+                and p.slider = #{post.slider}
+            </if>
+            <if test="post.title != '' and post.title != null">
+                and p.title like concat('%', #{postt.title}, '%')
+            </if>
+        </where>
+        order by p.create_time desc
+    </select>
+
+    <select id="queryTagPostPage" resultMap="postMap">
+        select
+        c.name as categoryName,
+        (select count(1) from post_comment pc where pc.post_id = p.id) as comments,
+        <include refid="postField"/>
+        from post_tag t
+        join post_info p on t.post_id = p.id
+        left join info_category c on p.category_id = c.id
+        where t.tag_name = #{tag}
+        order by p.create_time desc
+    </select>
+
+    <select id="queryPostById" resultMap="postMap">
+        select
+        string_agg(t.tag_name, ',') AS tags, c.name as categorylName,
+        c.name categoryName,
+        pa.content,
+        (select count(1) from post_comment pc where pc.post_id = p.id) as comments,
+        <include refid="postField"/>
+        from post_info p
+        left join post_content pa on p.id = pa.id
+        left join info_category c on c.id = p.category_id
+        left join post_tag t on p.id = t.post_id
+        where p.id = #{id} and p.status = 1
+        group by p.id, c.name, pa.content
+    </select>
+
+    <select id="queryChannelPosts" resultMap="postMap">
+        select p.id, p.title
+        from post_info p
+        left join info_channel c on c.id = p.channel_id
+        where c.id = #{channelId}
+        order by p.create_time
+    </select>
+
+    <update id="viewIncrease">
+        update post_info set views = views + 1 where id = #{id}
+    </update>
+
+    <select id="timeArchives" resultType="com.cowave.hub.home.api.entity.PostInfo">
+        select id, title, create_time createTime
+        from post_info where status = 1 order by create_time desc
+    </select>
+
+    <select id="timeArchiving" resultMap="postMap">
+        select
+        <include refid="postField"/>
+        from post_info p where p.status = 1 order by create_time desc
+    </select>
+
+    <insert id="insertPost" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        INSERT INTO post_info(title,summary,image,pwd, slider, status, featured,
+                              channel_id, category_id, create_user, create_time, update_time)
+        values(#{title},#{summary},#{image},#{pwd}, #{slider},#{status},#{featured},
+               #{channelId}, #{categoryId}, #{createUser},#{createTime},#{updateTime})
+    </insert>
+
+    <insert id="insertPostContent">
+        INSERT INTO post_content(id, content, editor)
+        values(#{id}, #{content}, #{editor})
+    </insert>
+
+    <update id="updatePost">
+        update post_info
+        set title       = #{title},
+            summary     = #{summary},
+            image       = #{image},
+            pwd         = #{pwd},
+            slider      = #{slider},
+            status      = #{status},
+            featured    = #{featured},
+            channel_id  = #{channelId},
+            category_id = #{categoryId},
+            update_time = #{updateTime}
+        where id = #{id}
+    </update>
+
+    <update id="updatePostContent">
+        update post_content
+        set content = #{content},
+            editor  = #{editor}
+        where id = #{id}
+    </update>
+
+    <select id="list" resultMap="postMap">
+        select
+        string_agg(t.tag_name, ',') AS tags, c.name as categorylName,
+        c.name as categorylName,
+        <include refid="postField"/>
+        from post_info p
+        left join info_category c on p.category_id = c.id
+        left join post_tag t on p.id = t.post_id
+        <where>
+            and p.status = 1
+            <if test="createUser != '' and createUser != null">
+                and p.create_user = #{createUser}
+            </if>
+            <if test="categoryId != '' and categoryId != null">
+                and p.category_id = #{categoryId}
+            </if>
+            <if test="channelId != '' and channelId != null">
+                and p.channel_id = #{channelId}
+            </if>
+            <if test="slider != '' and slider != null">
+                and p.slider = #{slider}
+            </if>
+            <if test="title != '' and title != null">
+                and p.title like concat('%', #{title}, '%')
+            </if>
+        </where>
+        group by p.id, c.name
+        order by p.create_time desc limit #{pageSize} offset  #{pageOffset}
+    </select>
+
+    <select id="count" resultType="java.lang.Integer">
+        select count(1) from post_info p
+        <where>
+            and p.status = 1
+            <if test="categoryId != '' and categoryId != null">
+                and p.category_id = #{categoryId}
+            </if>
+            <if test="channelId != '' and channelId != null">
+                and p.channel_id = #{channelId}
+            </if>
+            <if test="slider != '' and slider != null">
+                and p.slider = #{slider}
+            </if>
+            <if test="title != '' and title != null">
+                and p.title like concat('%', #{title}, '%')
+            </if>
+        </where>
+    </select>
+
+    <select id="queryTags" resultType="java.lang.String">
+        select distinct tag_name from post_tag
+    </select>
+
+    <delete id="deletePost">
+        delete from post_info where id = #{id}
+    </delete>
+
+    <delete id="deletePostContent">
+        delete from post_content where id = #{id}
+    </delete>
+
+    <delete id="deletePostTags">
+        delete from post_tag where post_id = #{id}
+    </delete>
+
+    <insert id="insertPostTags">
+        insert into post_tag(post_id, tag_name) values
+        <foreach item="item" index="index" collection="list" separator=",">
+            (#{postId}, #{item})
+        </foreach>
+    </insert>
+</mapper>

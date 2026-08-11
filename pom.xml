@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>com.cowave.hub</groupId>
+		<artifactId>hub</artifactId>
+		<version>1.0.3</version>
+	</parent>
+
+	<artifactId>hub-home</artifactId>
+	<packaging>jar</packaging>
+
+	<name>hub-home</name>
+	<url>https://github.com/eozoo/hub</url>
+	<description>门户论坛</description>
+
+	<properties>
+		<markdown.version>0.17.0</markdown.version>
+	</properties>
+
+	<build>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-pmd-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>**/IpAddress.java</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+	<dependencies>
+		<dependency>
+            <groupId>com.cowave.zoo</groupId>
+            <artifactId>zoo-framework</artifactId>
+        </dependency>
+		<dependency>
+            <groupId>com.cowave.hub</groupId>
+            <artifactId>hub-admin-client</artifactId>
+            <version>1.0.3</version>
+        </dependency>
+		<!-- nacos -->
+<!--		<dependency>-->
+<!--			<groupId>com.alibaba.cloud</groupId>-->
+<!--			<artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>-->
+<!--		</dependency>-->
+<!--		<dependency>-->
+<!--            <groupId>com.alibaba.cloud</groupId>-->
+<!--            <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>-->
+<!--        </dependency>-->
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.cloud</groupId>-->
+<!--            <artifactId>spring-cloud-starter-bootstrap</artifactId>-->
+<!--        </dependency>-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.cloud</groupId>-->
+<!--			<artifactId>spring-cloud-loadbalancer</artifactId>-->
+<!--		</dependency>-->
+		<!-- redis -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-data-redis</artifactId>
+		</dependency>
+		<!-- mail -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-mail</artifactId>
+		</dependency>
+		<!-- postgresql -->
+		<dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+		</dependency>
+		<!-- mybatis	-->
+		<dependency>
+			<groupId>com.baomidou</groupId>
+			<artifactId>mybatis-plus-boot-starter</artifactId>
+		</dependency>
+		<!-- liquibase -->
+		<dependency>
+			<groupId>org.liquibase</groupId>
+			<artifactId>liquibase-core</artifactId>
+		</dependency>
+		<!-- EhCache -->
+		<dependency>
+			<groupId>net.sf.ehcache</groupId>
+			<artifactId>ehcache</artifactId>
+		</dependency>
+		<!-- 离线IP地址库 -->
+		<dependency>
+			<groupId>org.lionsoul</groupId>
+			<artifactId>ip2region</artifactId>
+			<version>1.7.2</version>
+		</dependency>
+		<!-- websocket -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-websocket</artifactId>
+		</dependency>
+		<!-- prometheus -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+		<!-- thymeleaf -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+		<!-- security -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-security</artifactId>
+		</dependency>
+		<!-- jwt -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt</artifactId>
+		</dependency>
+		<!-- markdown -->
+		<dependency>
+			<groupId>org.commonmark</groupId>
+			<artifactId>commonmark-ext-task-list-items</artifactId>
+			<version>${markdown.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.atlassian.commonmark</groupId>
+			<artifactId>commonmark</artifactId>
+			<version>${markdown.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.atlassian.commonmark</groupId>
+			<artifactId>commonmark-ext-gfm-tables</artifactId>
+			<version>${markdown.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.atlassian.commonmark</groupId>
+			<artifactId>commonmark-ext-yaml-front-matter</artifactId>
+			<version>${markdown.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.atlassian.commonmark</groupId>
+			<artifactId>commonmark-ext-autolink</artifactId>
+			<version>${markdown.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.atlassian.commonmark</groupId>
+			<artifactId>commonmark-ext-gfm-strikethrough</artifactId>
+			<version>${markdown.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.atlassian.commonmark</groupId>
+			<artifactId>commonmark-ext-image-attributes</artifactId>
+			<version>${markdown.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.atlassian.commonmark</groupId>
+			<artifactId>commonmark-ext-heading-anchor</artifactId>
+			<version>${markdown.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.atlassian.commonmark</groupId>
+			<artifactId>commonmark-ext-ins</artifactId>
+			<version>${markdown.version}</version>
+		</dependency>
+    </dependencies>
+</project>

@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0.txt
+
+    Unless required by applicable law or agreed to in writing,
+    software distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and limitations under the License.
+
+-->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="com.cowave.hub.home.api.mapper.NavigationMapper">
+	<resultMap id="rm" type="com.cowave.hub.home.api.entity.NavigationInfo">
+		<result property="id"          column="id"         />
+		<result property="pid"         column="pid"        />
+		<result property="name"        column="name"       />
+		<result property="description" column="description"/>
+		<result property="sort"        column="sort"       />
+		<result property="type"        column="type"       />
+		<result property="pageUrl"     column="page_url"   />
+		<result property="status"      column="status"     />
+		<result property="icon"        column="icon"       />
+		<result property="createTime"  column="create_time"/>
+		<result property="updateTime"  column="update_time"/>
+		<association property="parent" javaType="com.cowave.hub.home.api.entity.NavigationInfo">
+			<result property="id"          column="p_id"         />
+			<result property="pid"         column="p_pid"        />
+			<result property="type"        column="p_type"       />
+			<result property="pageUrl"     column="p_page_url"   />
+			<result property="name"        column="p_name"       />
+			<result property="description" column="p_description"/>
+			<result property="status"      column="p_status"     />
+			<result property="icon"        column="p_icon"       />
+		</association>
+		<collection property="children" javaType="list" ofType="com.cowave.hub.home.api.entity.NavigationInfo">
+			<result property="id"          column="n_id"         />
+			<result property="pid"         column="n_pid"        />
+			<result property="type"        column="n_type"       />
+			<result property="pageUrl"     column="n_page_url"   />
+			<result property="name"        column="n_name"       />
+			<result property="description" column="n_description"/>
+			<result property="status"      column="n_status"     />
+			<result property="icon"        column="n_icon"       />
+		</collection>
+	</resultMap>
+
+	<select id="queryNavigations" resultMap="rm" useCache="true">
+		select
+		t.id, t.pid, t.type, t.page_url, t.name, t.description, t.status, t.icon, t.sort,
+		p.id p_id, p.pid p_pid, p.type p_type, p.page_url p_page_url, p.name p_name, p.description p_description, p.status p_status, p.icon p_icon,
+		n.id n_id, n.pid n_pid, n.type n_type, n.page_url n_page_url, n.name n_name, n.description n_description, n.status n_status, n.icon n_icon
+		from
+		info_navigation t
+		left join info_navigation p on t.pid = p.id
+		left join info_navigation n on n.pid = t.id
+		<where>
+			<if test="name !=null and name != ''">
+				and t.name like concat('%', #{name}, '%')
+			</if>
+			<if test="description !=null and description != ''">
+				and t.description like concat('%', #{description}, '%')
+			</if>
+			<if test="status !=null">
+				and t.status = #{status}
+			</if>
+			<if test="pid !=null">
+				and t.pid = #{pid}
+			</if>
+		</where>
+		order by t.sort, n.sort
+	</select>
+
+</mapper>
+

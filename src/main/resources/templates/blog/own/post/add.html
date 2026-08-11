@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <th:block th:include="include :: header('创建博客')"/>
+    <th:block th:include="include :: datetimepicker-css"/>
+    <th:block th:include="include :: bootstrap-select-css"/>
+    <th:block th:include="include :: markdown-css"/>
+</head>
+<body class="white-bg">
+
+<!--导航栏-->
+<header id="header">
+    <div th:replace="blog/navbar :: navbar"></div>
+</header>
+
+<div class="wrapper wrapper-content animated fadeInRight ibox-content">
+    <div class="ibox-content" style="border-style: none; padding: 0px 15px 15px 15px;">
+        <div class="row form-body form-horizontal">
+            <form class="form-horizontal m-t col-lg-12" id="form-post-add">
+                <!-- 左侧-->
+                <div class="col-lg-8">
+                    <!--标题-->
+                    <div class="form-group">
+                        <h3>
+                            <input type="text" class="form-control" id="title" name="title"
+                                   th:value="${post?.title}" placeholder="请输入文章标题" required>
+                        </h3>
+                    </div>
+                    <!--markdown编辑器-->
+                    <div class="form-group">
+                        <div id=md-content>
+                            <textarea id="content" name="content" th:text="${post?.content}"></textarea>
+                        </div>
+                    </div>
+                    <div class="col-sm-offset-5 col-sm-10" style="width: 60%">
+                        <button type="button" class="btn btn-sm btn-danger" onclick="window.history.back();" style="float: right">
+                            <i class="fa fa-reply-all"></i>关 闭
+                        </button>
+                        <button type="button" class="btn btn-sm btn-primary" onclick="submitHandler()" style="float: right">
+                            <i class="fa fa-check"></i>保 存
+                        </button>&nbsp;&nbsp;
+                    </div>
+                </div>
+                <!-- 右侧-->
+                <div class="col-lg-4 ">
+                    <div class="form-group col-xs-12">
+                        <label class="control-label is-required">文章分类：</label>
+                        <select class="form-control noselect2 selectpicker" data-none-selected-text="选择分类" id="categoryId"
+                                name="categoryId" required>
+                            <option value="" selected>请选择分类</option>
+                            <option th:each="item:${categories}"
+                                    th:value="${item.id}"
+                                    th:text="${item.name}"
+                                    th:selected="${post?.categoryId}==${item.id}"
+                            ></option>
+                        </select>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label class="control-label">文章专栏：</label>
+                        <select class="form-control noselect2 selectpicker" data-none-selected-text="选择分类" id="channelId"
+                                name="channelId">
+                            <option value="" selected>请选择专栏</option>
+                            <option th:each="item:${channels}"
+                                    th:value="${item.id}"
+                                    th:text="${item.name}"
+                                    th:selected="${post?.channelId}==${item.id}"
+                            ></option>
+                        </select>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label class="control-label">文章标签：</label>
+                        <input name="tags" class="form-control" placeholder="多个标签使用英文逗号分隔">
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label class="control-label">摘要：</label>
+                        <div class="ml-3">
+                             <textarea type="text" name="summary" maxlength="500" class="form-control" rows="5"
+                              th:value="${post?.summary}" placeholder="文章摘要"></textarea>
+                        </div>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label class="control-label is-required">是否置顶：</label>
+                        <div class="ml-3">
+                            <label class="radio-box">
+                                <input name="slider" type="radio" value=0 required th:checked="true"> 否</input>
+                            </label>
+                            <label class="radio-box">
+                                <input name="slider" type="radio" value="1" required> 是 </input>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label class=" control-label is-required">是否推荐：</label>
+                        <div class="ml-3">
+                            <label class="radio-box">
+                                <input name="featured" type="radio" value=0 required th:checked="true"> 否</input>
+                            </label>
+                            <label class="radio-box">
+                                <input name="featured" type="radio" value="1" required> 是 </input>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label class=" control-label is-required">是否发布：</label>
+                        <div class="ml-3">
+                            <label class="radio-box">
+                                <input name="status" type="radio" value=0 required > 否 </input>
+                            </label>
+                            <label class="radio-box">
+                                <input name="status" type="radio" value=1 required th:checked="true"> 是 </input>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label class="control-label">添加密码：</label>
+                        <div class="ml-3">
+                            <input name="pwd" id="pwd" class="form-control">
+                        </div>
+                    </div>
+                    <div class="form-group col-xs-12">
+                        <label class="control-label" style="display: inline-block">文章封面：</label>
+                        <div class="ml-3">
+                            <input type="file" id="tpicf"><a id="url"><img style="width: 90px;height: 90px"></a>
+                            <input name="image" id="postImage" style="display: none">
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<th:block th:include="include :: footer"/>
+<th:block th:include="include :: datetimepicker-js"/>
+<th:block th:include="include :: bootstrap-select-js"/>
+<th:block th:include="include :: markdown-js"/>
+
+<script th:inline="javascript">
+    var prefix = ctx;
+
+    var editor;
+
+    $(function () {
+
+        // editormd配置
+        editor = editormd("md-content", {
+            width: "100%",
+            height: 700,
+            syncScrolling: "single",
+            path: "/blog/editormd/lib/",
+            // 开启工具栏 (默认为true)
+            toolbar: true,
+            // 指定工具栏
+            toolbarIcons: function () {
+                return ["undo", "redo", "|",
+                    "list-ul", "list-ol", "|",
+                    "bold", "del", "hr", "|",
+                    "table", "image", "|",
+                    "||", "watch", "fullscreen", "preview", "search"]
+            },
+            // 开始图片上传
+            imageUpload: true,
+            // 上传图片的格式
+            imageFormats: ["jpg", "jpeg", "gif", "png", "bmp", "webp"],
+            // 上传路径
+            imageUploadURL: "/post/md/upload",
+            // 图片上传成功后，可以做点什么
+            onload: function () {
+            },
+            // 关闭实时预览
+            watch: false,
+            //预览主题
+            // previewTheme: "dark",
+            //编辑主题
+            // editorTheme: "pastel-on-dark",
+            // 开启科学公式TeX语言支持，默认关闭
+            tex: true,
+            // 开启流程图支持，默认关闭
+            flowChart: true,
+            // 开启时序/序列图支持，默认关闭,
+            sequenceDiagram: true,
+        });
+
+        //监听粘贴
+        document.addEventListener('paste', function (event) {
+            var items = (event.clipboardData || window.clipboardData).items;
+            var file = null;
+            if (items && items.length) {
+                // 搜索剪切板items
+                for (var i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        file = items[i].getAsFile();
+                        break;
+                    }
+                }
+            } else {
+                alert("当前浏览器不支持");
+                return;
+            }
+            if (!file) {
+                return;
+            }
+            // 此时file就是我们的剪切板中的图片对象
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function () {
+            };
+            xhr.onerror = function () {
+                alert("网络异常，上传失败!");
+            };
+            var formData = new FormData();
+            formData.append("editormd-image-file", file);
+            xhr.open('POST', '/post/md/upload', true);
+            xhr.send(formData);
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    if (xhr.status >= 200 && xhr.status < 300 || xhr.status === 304) {
+                        var obj = xhr.responseText;
+                        var objarr = eval("(" + obj + ")");
+                        editor.insertValue("![](" + objarr["url"] + ")");
+                    }
+                }
+            }
+        });
+    });
+
+    $("#form-post-add").validate({
+        focusCleanup: true
+    });
+
+    function submitHandler() {
+        if ($.validate.form("form-post-add")) {
+            var data = $("#form-post-add").serializeArray();
+            $.operate.saveTab("/post/add", data);
+        }
+    }
+
+    $("input[name='created']").datetimepicker({
+        format: "yyyy-mm-dd",
+        minView: "month",
+        autoclose: true
+    });
+
+    $().ready(function () {
+        var single = [[${channelId}]];
+        $("#channelId option[value= " + single + "]").prop("selected", true);
+    });
+
+    $(function () {
+        $('#tag').select2({
+            placeholder: "请选择标签",
+            allowClear: true
+        });
+    })
+
+    // 图片上传
+    $("#tpicf").change(function () {
+        var data = new FormData();
+        data.append("file", $("#tpicf")[0].files[0]);
+        $.ajax({
+            type: "post",
+            url: "/post/upload",
+            data: data,
+            cache: false,
+            contentType: false,
+            processData: false,
+            dataType: 'json',
+            success: function (result) {
+                if (result.code === web_status.SUCCESS) {
+                    $("#url img").attr("src", result.data)
+                    $("#postImage").val(result.data)
+                }
+            },
+            error: function (error) {
+                alert("图片上传失败。");
+            }
+        });
+    })
+</script>
+</body>
+</html>

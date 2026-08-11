@@ -1,0 +1,60 @@
+spring:
+  access:
+    always-success: true
+    oauth:
+      appId: ${oauth_app_id:6ac6519451ed4ef09431aacccbcb1f5f}
+      appSecret: ${oauth_app_secret:4a2e671fbd074f238e80c7f5566f8f7a}
+      appRedirectUri: ${oauth_app_redirect:http://10.64.4.74/auth/callback}
+      oauthCodeUri: ${oauth_code_uri:http://10.64.4.74:81/oauth/cowave/authorize}
+      oauthTokenUri: ${oauth_token_uri:http://10.64.4.74:19000}
+#    auth:
+#      enable: true
+#      mode: access
+#      tokenStore: cookie
+#      authUrls:
+#        - /post/**
+#        - /category/**
+#        - /comment/**
+  datasource:
+    url: ${datasource_url:jdbc:postgresql://127.0.0.1:5432/hub-home}
+    username: ${datasource_username:postgres}
+    password: ${datasource_password:postgres}
+  liquibase:
+    enabled: true
+    change-log: sql/changelog.yml
+  redis:
+    host: ${redis_host:127.0.0.1}
+    port: ${redis_port:6379}
+  mail:
+    host: smtp.163.com
+    username: cowaveAdmin@163.com
+    password: TQQWRIRSQLTEELPT
+  thymeleaf:
+    mode: HTML
+    prefix: classpath:/templates/
+    check-template-location: true
+    suffix:  .html
+    encoding: utf-8
+    cache: false
+
+blog:
+  # IP地址获取
+  addressEnabled: true
+  # 开启页面静态化
+  pageStaticEnabled: false
+  # 上传路径
+  profile: public
+  # 默认应用列表
+  applications:
+    - icon: CompactDisc
+      name: 分享管理
+      link: /blog
+    - icon: Cloud
+      name: 系统管理
+      link: ${hub_admin_uri:http://10.64.4.74:81}
+    - icon: Fire
+      name: 在线工具
+      link: https://www.jyshare.com
+    - icon: LaptopCode
+      name: 今日资讯
+      link: https://hot.imsyy.top

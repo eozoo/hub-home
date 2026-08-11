@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" >
+<head>
+    <th:block th:include="include :: header('新增分类')" />
+    <th:block th:include="include :: bootstrap-fileinput-css"/>
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content animated fadeInRight ">
+        <form class="form-horizontal m" id="form-channel-add" th:width="100px">
+            <div class="form-group">
+                <label class="col-sm-3 control-label is-required">分类名称：</label>
+                <div class="col-sm-4" >
+                    <input name="name" class="form-control" type="text" required>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <th:block th:include="include :: footer" />
+    <th:block th:include="include :: bootstrap-fileinput-js"/>
+    <script th:inline="javascript">
+        $("#form-channel-add").validate({
+            focusCleanup: true
+        });
+
+        function submitHandler() {
+            if ($.validate.form()) {
+                $.operate.save("/category/add", $('#form-channel-add').serialize());
+            }
+        }
+    </script>
+</body>
+</html>

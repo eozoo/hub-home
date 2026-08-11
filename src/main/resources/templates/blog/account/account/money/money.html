@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org" xmlns:shiro="http://www.pollix.at/thymeleaf/shiro">
+<head>
+    <th:block th:include="include :: header('账目详情列表')"/>
+    <th:block th:include="include :: select2-css" />
+    <th:block th:include="include :: bootstrap-select-css" />
+</head>
+<body class="gray-bg">
+<div class="container-div">
+    <div class="row">
+        <div class="col-sm-12 search-collapse">
+            <form id="formId">
+                <div class="select-list">
+                    <ul>
+                        <li style="display: none">
+                            <label>账本id</label>
+                            <input class="form-control" type="text" name="accountId" id="accountId" disabled
+                                   th:field="${account.id}" required>
+                        </li>
+                        <li>
+                            <label>账本名称:</label>
+                            <input class="form-control" type="text" name="accountName" id="accountName" readonly="true"
+                                   th:field="${account.accountName}" required>
+                        </li>
+                        <li  >
+                            <label>日期：</label>
+                            <input type="text" class="time-input" placeholder="请选择日期" name="moneyDate"  readonly="readonly"/>
+                        </li>
+                        <li>
+                            <label>分类：</label>
+                            <select id="classIds" name="classIds" class="noselect2 selectpicker" data-none-selected-text="请选择分类" multiple >
+                                <optgroup th:each="entry:${map}" th:label="${entry.key}">
+                                    <option th:each="accountClass:${entry.value}"
+                                            th:value="${accountClass.id}"
+                                            th:text="${accountClass.className}"
+                                    ></option>
+                                </optgroup>
+                            </select>
+                        </li>
+                        <li>
+                            <label>备注：</label>
+                            <input class="form-control" type="text" name="moneyIntroduce" id="moneyIntroduce"/>
+                        </li>
+                        <li>
+                            <label>是否入账：</label>
+                            <select name="isTotal" th:with="type=${@dict.getType('account_is_Total')}">
+                                <option value="">所有</option>
+                                <option th:each="dict : ${type}" th:text="${dict.dictLabel}"
+                                        th:value="${dict.dictValue}"></option>
+                            </select>
+                        </li>
+                        <li>
+                            <a class="btn btn-primary btn-rounded btn-sm" onclick="$.table.search()"><i
+                                    class="fa fa-search"></i>&nbsp;搜索</a>
+                            <a class="btn btn-warning btn-rounded btn-sm" onclick="$.form.reset()"><i
+                                    class="fa fa-refresh"></i>&nbsp;重置</a>
+                        </li>
+                    </ul>
+                </div>
+            </form>
+        </div>
+
+        <div class="btn-group-sm" id="toolbar" role="group">
+<!--            <a class="btn btn-success" onclick="addPay()" shiro:hasPermission="account:money:add">-->
+<!--                <i class="fa fa-plus"></i> 支出-->
+<!--            </a>-->
+<!--            <a class="btn btn-success" onclick="addIncome()" shiro:hasPermission="account:money:add">-->
+<!--                <i class="fa fa-plus"></i> 收入-->
+<!--            </a>-->
+            <a class="btn btn-success" onclick="addMoney()" shiro:hasPermission="account:money:add">
+                <i class="fa fa-plus"></i> 添加
+            </a>
+            <a class="btn btn-primary single disabled" onclick="$.operate.edit()"
+               shiro:hasPermission="account:money:edit">
+                <i class="fa fa-edit"></i> 修改
+            </a>
+            <a class="btn btn-danger multiple disabled" onclick="removeAll()"
+               shiro:hasPermission="account:money:remove">
+                <i class="fa fa-remove"></i> 删除
+            </a>
+            <a class="btn btn-warning" onclick="exportExcel()" shiro:hasPermission="account:money:export">
+                <i class="fa fa-download"></i> 导出
+            </a>
+            <a class="btn btn-danger" onclick="closeItem()">
+                <i class="fa fa-reply-all"></i> 关闭
+            </a>
+        </div>
+        <div class="col-sm-12 select-table table-striped">
+            <table id="bootstrap-table"></table>
+        </div>
+    </div>
+</div>
+<th:block th:include="include :: footer"/>
+<th:block th:include="include :: select2-js" />
+<th:block th:include="include :: bootstrap-select-js" />
+<script th:inline="javascript">
+    var editFlag = [[${@permission.hasPermi('account:money:edit')}]];
+    var removeFlag = [[${@permission.hasPermi('account:money:remove')}]];
+    var isTotalDatas = [[${@dict.getType('account_is_Total')}]];
+    var classTypeDatas = [[${@dict.getType('account_income_pay')}]];
+    var prefix = ctx + "account/money";
+
+    $(function () {
+        var options = {
+            url: prefix + "/list",
+            queryParams: queryParams,
+            createUrl: prefix + "/add/{id}",
+            updateUrl: prefix + "/edit/{id}",
+            removeUrl: prefix + "/remove",
+            exportUrl: prefix + "/export",
+            modalName: "记账详情",
+            columns: [{
+                checkbox: true
+            },
+                {
+                    field: 'id',
+                    title: '主键id',
+                    visible: false,  // 隐藏某列（列选项可见）
+                    ignore: true,    // 列选项不可见
+                },
+                {
+                    field: 'classType',
+                    title: '账户类型',
+                    formatter: function (value, row, index) {
+                        if ($.common.isEmpty(classTypeDatas) || $.common.isEmpty(value)) {
+                            return '';
+                        }
+                        var actions = [];
+                        $.each(classTypeDatas, function(index, dict) {
+                            if (dict.dictLabel == ('' + value)) {
+                                var listClass = $.common.equals("default", dict.listClass) || $.common.isEmpty(dict.listClass) ? "" : "badge badge-" + dict.listClass;
+                                var cssClass = $.common.isNotEmpty(dict.cssClass) ? dict.cssClass : listClass;
+                                actions.push($.common.sprintf("<span class='%s'>%s</span>", cssClass, dict.dictLabel));
+                                return false;
+                            }
+                        });
+                        if (actions.length === 0) {
+                            actions.push($.common.sprintf("<span>%s</span>", value))
+                        }
+                        return actions.join('');
+                    }
+                },
+                {
+                    field: 'className',
+                    title: '所属分类',
+                },
+                {
+                    field: 'money',
+                    title: '金额',
+                    sortable: true,
+                    formatter: function (value, item, index) {
+                        return value.toLocaleString('zh', {style: 'currency', currency: 'CNY'});
+                    }
+                },
+                {
+                    field: 'moneyDate',
+                    title: '花钱日期',
+                    sortable: true,
+                },
+
+                {
+                    field: 'isTotal',
+                    title: '是否记入总账',
+                    formatter: function (value, row, index) {
+                        return $.table.selectDictLabel(isTotalDatas, value);
+                    }
+                },
+                {
+                    field: 'createBy',
+                    title: '创建人',
+                    visible: false,  // 隐藏某列（列选项可见）
+                },
+                {
+                    field: 'createTime',
+                    title: '创建时间',
+                    visible: false,  // 隐藏某列（列选项可见）
+                },
+                {
+                    field: 'updateBy',
+                    title: '修改人',
+                    sortable: true,
+                    visible: false,  // 隐藏某列（列选项可见）
+                },
+                {
+                    field: 'updateTime',
+                    title: '修改时间',
+                    sortable: true,
+                    visible: false,  // 隐藏某列（列选项可见）
+                },
+                {
+                    field: 'moneyIntroduce',
+                    title: '备注'
+                },
+                {
+                    title: '操作',
+                    align: 'center',
+                    formatter: function (value, row, index) {
+                        var actions = [];
+                        actions.push('<a class="btn btn-success btn-xs ' + editFlag + '" href="javascript:void(0)" onclick="$.operate.edit(\'' + row.id + '\')"><i class="fa fa-edit"></i>编辑</a> ');
+                        actions.push('<a class="btn btn-danger btn-xs ' + removeFlag + '" href="javascript:void(0)" onclick="remove(\'' + row.id + '\')"><i class="fa fa-remove"></i>删除</a>');
+                        return actions.join('');
+                    }
+                }]
+        };
+        $.table.init(options);
+    });
+
+    /*加载列表信息*/
+    function queryParams(params) {
+        var search = $.table.queryParams(params);
+        // search.dictType = $("#dictType").val();
+        search.accountId = $("#accountId").val();
+        console.log(search.accountId, " search.accountId ")
+        return search;
+    }
+
+    /*账目详情(金额)-新增*/
+    function addMoney() {
+        var accountId = $("#accountId").val();
+        var url = prefix + '/add/' + accountId;
+        $.modal.openTab("新增支出", url);
+    }
+
+    // 删除信息
+    function remove (id) {
+        table.set();
+        $.modal.confirm("确定删除该条" + table.options.modalName + "信息吗？", function() {
+            var url = $.common.isEmpty(id) ? table.options.removeUrl : table.options.removeUrl.replace("{id}", id);
+            if (table.options.type == table_type.bootstrapTreeTable) {
+                $.operate.get(url);
+            } else {
+                var data = { "ids": id ,"accountId":$("#accountId").val()};
+                $.operate.submit(url, "post", "json", data);
+            }
+        });
+    }
+
+    // 批量删除信息
+    function removeAll() {
+        table.set();
+        var rows = $.common.isEmpty(table.options.uniqueId) ? $.table.selectFirstColumns() : $.table.selectColumns(table.options.uniqueId);
+        if (rows.length == 0) {
+            $.modal.alertWarning("请至少选择一条记录");
+            return;
+        }
+        $.modal.confirm("确认要删除选中的" + rows.length + "条数据吗?", function() {
+            var url = table.options.removeUrl;
+            var data = { "ids": rows.join(),"accountId":$("#accountId").val()};
+            $.operate.submit(url, "post", "json", data);
+        });
+    }
+
+    /*导出*/
+    function exportExcel(formId) {
+        table.set();
+        var accountId = $("#accountId").val();
+        $.modal.confirm("确定导出所有" + table.options.modalName + "吗？", function() {
+            var currentId = $.common.isEmpty(formId) ? $('form').attr('id') : formId;
+            var params = $("#" + table.options.id).bootstrapTable('getOptions');
+            var dataParam = $("#" + currentId).serializeArray();
+            dataParam.push({ "name": "orderByColumn", "value": params.sortName });
+            dataParam.push({ "name": "isAsc", "value": params.sortOrder });
+            dataParam.push({ "name": "accountId", "value": accountId });
+            $.modal.loading("正在导出数据，请稍候...");
+            $.post(table.options.exportUrl, dataParam, function(result) {
+                if (result.code == web_status.SUCCESS) {
+                    window.location.href = ctx + "common/download?fileName=" + encodeURI(result.msg) + "&delete=" + true;
+                } else if (result.code == web_status.WARNING) {
+                    $.modal.alertWarning(result.msg)
+                } else {
+                    $.modal.alertError(result.msg);
+                }
+                $.modal.closeLoading();
+            });
+        });
+    }
+
+</script>
+</body>
+</html>

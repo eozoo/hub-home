@@ -1,0 +1,28 @@
+server:
+  port: ${http_port:80}
+  servlet:
+    context-path: /
+
+spring:
+  application:
+    name: hub-home
+  cloud:
+    discovery:
+      client:
+        composite-indicator:
+          enabled: false
+    nacos:
+      server-addr: ${nacos_server:10.64.4.74:8848}
+      discovery:
+        namespace: ${nacos_namespace:}
+        cluster-name: ${nacos_cluster:}
+        group: ${nacos_group:DEFAULT_GROUP}
+        metadata:
+          path: ${server.servlet.context-path}
+          management:
+            context-path: /actuator
+      config:
+        file-extension: yml
+        namespace: ${nacos_namespace:}
+        cluster-name: ${nacos_cluster:}
+        group: ${nacos_group:DEFAULT_GROUP}
