@@ -4,7 +4,7 @@ spring:
     oauth:
       appId: ${oauth_app_id:6ac6519451ed4ef09431aacccbcb1f5f}
       appSecret: ${oauth_app_secret:4a2e671fbd074f238e80c7f5566f8f7a}
-      appRedirectUri: ${oauth_app_redirect:http://10.64.4.74/auth/callback}
+      appRedirectUri: ${oauth_app_redirect:http://10.64.4.74/oauth/callback?provider=cowave}
       oauthCodeUri: ${oauth_code_uri:http://10.64.4.74:81/oauth/cowave/authorize}
       oauthTokenUri: ${oauth_token_uri:http://10.64.4.74:19000}
 #    auth:

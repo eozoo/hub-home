@@ -17,21 +17,32 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 /**
+ * OAuth 回调响应
+ *
  * @author shanhuiming
  */
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
-public class IconVo {
+public class OAuthCallbackVo {
 
     /**
-     * OAuth2 client_id（动态应用才有，静态应用为 null）
+     * 访问令牌
      */
-    private String clientId;
+    private String accessToken;
 
-    private String name;
+    /**
+     * 用户名
+     */
+    private String username;
 
-    private String icon;
+    /**
+     * 用户昵称
+     */
+    private String userNick;
 
-    private String link;
+    /**
+     * 头像地址
+     */
+    private String avatar;
 }

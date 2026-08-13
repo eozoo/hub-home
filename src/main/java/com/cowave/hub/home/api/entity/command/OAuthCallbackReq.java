@@ -10,28 +10,25 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and limitations under the License.
  */
-package com.cowave.hub.home.api.entity.vo;
+package com.cowave.hub.home.api.entity.command;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 
 /**
+ * OAuth 回调请求
+ *
  * @author shanhuiming
  */
-@AllArgsConstructor
-@NoArgsConstructor
 @Data
-public class IconVo {
+public class OAuthCallbackReq {
 
     /**
-     * OAuth2 client_id（动态应用才有，静态应用为 null）
+     * 授权码
      */
-    private String clientId;
+    private String code;
 
-    private String name;
-
-    private String icon;
-
-    private String link;
+    /**
+     * PKCE code_verifier
+     */
+    private String codeVerifier;
 }

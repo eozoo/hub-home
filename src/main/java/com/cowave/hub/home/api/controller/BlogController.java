@@ -35,14 +35,6 @@ public class BlogController {
     private final AccessProperties accessProperties;
 
     /**
-     * 主页
-     */
-    @GetMapping("/home")
-    public String home() {
-        return "blog/home";
-    }
-
-    /**
      * 博客首页
      */
     @GetMapping({"", "/", "index", "/list"})

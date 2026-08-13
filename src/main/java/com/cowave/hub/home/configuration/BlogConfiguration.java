@@ -43,6 +43,9 @@ public class BlogConfiguration {
     /** 默认应用列表 */
     private List<IconVo> applications;
 
+    /** 默认 OAuth 应用列表（始终可见，无需认证） */
+    private List<IconVo> oauthApps;
+
     /**
      * 静态页面路径
      */

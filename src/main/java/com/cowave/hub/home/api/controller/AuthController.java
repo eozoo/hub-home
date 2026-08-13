@@ -82,7 +82,7 @@ public class AuthController {
             URL url = new URL(profileDto.getAvatar());
             IOUtils.copy(url, new File("public/avatar/" + profileDto.getUserAccount() + ".jpg"));
         }
-        return "redirect:/blog/home";
+        return "redirect:/";
     }
 
     private void avatarGenerate(String userName, String userAccount) throws IOException {

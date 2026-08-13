@@ -11,11 +11,11 @@ spring:
     oauth:
       appId: 6ac6519451ed4ef09431aacccbcb1f5f
       appSecret: 4a2e671fbd074f238e80c7f5566f8f7a
-      appRedirectUri: http://10.64.68.60/auth/callback
-      oauthCodeUri: http://10.64.68.60:1024/oauth/cowave/authorize
-      oauthTokenUri: http://10.64.68.60:19010
+      appRedirectUri: http://10.30.51.31:3000/oauth/callback?provider=cowave
+      oauthCodeUri: http://10.30.51.31:1024/oauth/cowave/authorize
+      oauthTokenUri: http://10.30.51.31:19010
     auth:
-      enable: true
+      enable: false
       mode: access
       tokenStore: cookie
       authUrls:
