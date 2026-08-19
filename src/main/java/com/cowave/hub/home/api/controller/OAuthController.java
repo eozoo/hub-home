@@ -12,30 +12,42 @@
  */
 package com.cowave.hub.home.api.controller;
 
-import com.cowave.hub.admin.client.AdminOAuthService;
+import com.cowave.hub.admin.client.AdminOAuthClient;
 import com.cowave.hub.admin.client.dto.OAuthAppCardDto;
+import com.cowave.hub.admin.client.dto.OAuthEntryDto;
+import com.cowave.hub.admin.client.dto.MemberProfileDto;
 import com.cowave.hub.admin.client.dto.UserProfileDto;
+import com.cowave.hub.admin.client.request.OAuth2TokenRequest;
 import com.cowave.zoo.framework.access.AccessProperties;
 import com.cowave.zoo.framework.access.security.AccessUserDetails;
-import com.cowave.zoo.http.client.constants.HttpCode;
-import com.cowave.zoo.http.client.response.HttpResponse;
 import com.cowave.zoo.http.client.response.Response;
 import com.cowave.hub.home.api.cache.SessionCache;
 import com.cowave.hub.home.api.entity.Session;
 import com.cowave.hub.home.api.entity.command.OAuthCallbackReq;
-import com.cowave.hub.home.api.entity.vo.IconVo;
 import com.cowave.hub.home.api.entity.vo.OAuthCallbackVo;
 import com.cowave.hub.home.configuration.BlogConfiguration;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
+
+import javax.imageio.ImageIO;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.font.FontRenderContext;
+import java.awt.geom.Rectangle2D;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.util.List;
+import java.util.Random;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
 /**
- * OAuth REST API
- * 处理前端 SPA 的 OAuth 回调、令牌刷新、应用列表
+ * OAuth授权管理
  *
  * @author shanhuiming
  */
@@ -45,28 +57,60 @@ import javax.servlet.http.HttpServletResponse;
 public class OAuthController {
 
     private final SessionCache sessionCache;
-    private final AdminOAuthService oAuthService;
+
+    private final AdminOAuthClient oauthClient;
+
     private final AccessProperties accessProperties;
+
     private final BlogConfiguration blogConfiguration;
 
+    private final Random rand = new Random();
+
+    @Value("${spring.access.oauth.memberTenantId:cowave}")
+    private String memberTenantId;
+
     /**
-     * OAuth 回调 —— 用授权码兑换令牌
-     * POST /api/v1/oauth/callback/{provider}
+     * 授权服务列表
+     */
+    @GetMapping("/list")
+    public Response<List<OAuthEntryDto>> list() {
+        return Response.success(oauthClient.getOauthList(memberTenantId));
+    }
+
+    /**
+     * OAuth授权回调
      *
-     * @param provider OAuth provider (cowave, github, qq, wechat...)
-     * @param req      授权码 + PKCE code_verifier
+     * @param provider OAuth授权提供放
+     * @param req      授权码 + code_verifier
      */
     @PostMapping("/callback/{provider}")
-    public Response<OAuthCallbackVo> callback(@PathVariable String provider,
-                                               @RequestBody OAuthCallbackReq req,
-                                               HttpServletResponse response) {
-        // 目前只有 cowave (hub-admin) 一个 provider，后续扩展
-        if (!"cowave".equals(provider)) {
+    public Response<OAuthCallbackVo> callback(
+            @PathVariable String provider, @RequestBody OAuthCallbackReq req, HttpServletResponse response) {
+        AccessUserDetails userDetails;
+        String avatar;
+        if ("cowave".equals(provider)) {
+            OAuth2TokenRequest tokenRequest = new OAuth2TokenRequest();
+            tokenRequest.setCode(req.getCode());
+            tokenRequest.setClientId(accessProperties.oauthAppId());
+            tokenRequest.setClientSecret(accessProperties.oauthAppSecret());
+            tokenRequest.setRedirectUri(accessProperties.oauthAppRedirectUri());
+            tokenRequest.setCodeVerifier(req.getCodeVerifier());
+            // 系统用户（PKCE）
+            userDetails = oauthClient.getAuthorizeToken(tokenRequest);
+            UserProfileDto profileDto = oauthClient.getUserProfile(userDetails.getAccessToken());
+            if (StringUtils.isNotBlank(profileDto.getAvatar())) {
+                avatar = profileDto.getAvatar();
+            } else {
+                avatar = generateAvatar(profileDto.getUserName(), profileDto.getUserAccount());
+            }
+        } else if ("gitlab".equals(provider)) {
+            // 会员 gitlab 登录（落 hub_member）
+            userDetails = oauthClient.gitlabAuthorizeToken(memberTenantId, req.getCode());
+            MemberProfileDto profileDto = oauthClient.getMemberProfile(userDetails.getAccessToken());
+            avatar = profileDto.getMemberAvatar();
+        } else {
             return Response.error("不支持的授权提供商: " + provider);
         }
-
-        // 向 hub-admin 兑换令牌（传入 code + code_verifier）
-        AccessUserDetails userDetails = oAuthService.getAuthorizeToken(req.getCode(), req.getCodeVerifier());
 
         // 保存 session 到 Redis
         String sessionId = sessionCache.save(userDetails.getAccessToken(), userDetails.getRefreshToken());
@@ -74,30 +118,19 @@ public class OAuthController {
         // refreshToken 写入 HttpOnly cookie（跨页面存活，防 XSS）
         setHttpOnlyCookie(response, "REFRESH_TOKEN", sessionId, 86400 * 7);
 
-        // 获取头像
-        String avatar = null;
-        try {
-            UserProfileDto profileDto = oAuthService.getUserProfile(userDetails.getAccessToken());
-            if (StringUtils.isNotBlank(profileDto.getAvatar())) {
-                avatar = profileDto.getAvatar();
-            }
-        } catch (Exception ignored) {
-        }
-
         // accessToken 返回给前端（存在内存中，不落盘）
         OAuthCallbackVo vo = new OAuthCallbackVo();
         vo.setAccessToken(userDetails.getAccessToken());
         vo.setUsername(userDetails.getUsername());
         vo.setUserNick(userDetails.getUserNick());
         vo.setAvatar(avatar);
-
         return Response.success(vo);
     }
 
     /**
      * 刷新访问令牌
      * POST /api/v1/oauth/refresh
-     *
+     * <p>
      * 前端每个页面加载时调用，用 HttpOnly cookie 中的 refreshToken 换取新的 accessToken
      */
     @PostMapping("/refresh")
@@ -116,7 +149,7 @@ public class OAuthController {
         // 刷新令牌
         AccessUserDetails userDetails;
         try {
-            userDetails = oAuthService.refreshAuthorizeToken(session.getRefreshToken());
+            userDetails = oauthClient.refreshAuthorizeToken(session.getRefreshToken());
         } catch (Exception e) {
             sessionCache.remove(sessionId);
             return Response.error("令牌刷新失败");
@@ -138,67 +171,28 @@ public class OAuthController {
     }
 
     /**
-     * 获取应用列表（含 OAuth 应用 + 静态应用）
+     * 获取应用列表（匿名返回 public，登录返回完整可见应用）
      * GET /api/v1/oauth/apps
-     *
-     * 始终返回应用列表，无需认证：
-     * - 默认 OAuth 入口（Hub Admin，使用 hub-home 自身 client_id，始终可见）
-     * - 已授权的动态 OAuth 应用（需认证后可见）
-     * - 静态链接应用（始终可见）
      */
     @GetMapping("/apps")
-    public Response<java.util.List<IconVo>> apps(
+    public Response<List<OAuthAppCardDto>> apps(
             @CookieValue(value = "REFRESH_TOKEN", required = false) String sessionId) {
-        java.util.List<IconVo> list = new java.util.ArrayList<>();
-
-        // 1. 默认 OAuth 入口（始终可见，点击触发 OAuth 登录流程）
-        //    后续可扩展为从配置读取多个默认 OAuth 应用
-        IconVo defaultEntry = new IconVo();
-        defaultEntry.setClientId(accessProperties.oauthAppId());
-        defaultEntry.setName("系统管理");
-        defaultEntry.setIcon("Cloud");
-        list.add(defaultEntry);
-
-        // 2. 已授权的动态 OAuth 应用（需要登录）
+        // 登录态：取 session 里的 accessToken
+        String accessToken = null;
         if (StringUtils.isNotBlank(sessionId)) {
             Session session = sessionCache.get(sessionId);
             if (session != null) {
-                try {
-                    HttpResponse<Response<java.util.List<OAuthAppCardDto>>> httpResponse =
-                            oAuthService.getAuthorizedApps(session.getAccessToken());
-
-                    if (HttpCode.INVALID_TOKEN.getStatus() == httpResponse.getStatus()) {
-                        AccessUserDetails userDetails =
-                                oAuthService.refreshAuthorizeToken(session.getRefreshToken());
-                        String newSessionId = sessionCache.save(
-                                userDetails.getAccessToken(), userDetails.getRefreshToken());
-                        sessionCache.remove(sessionId);
-                        httpResponse = oAuthService.getAuthorizedApps(userDetails.getAccessToken());
-                    }
-
-                    Response<java.util.List<OAuthAppCardDto>> response = httpResponse.getBody();
-                    for (OAuthAppCardDto dto : response.getData()) {
-                        if (dto.getClientId().equals(accessProperties.oauthAppId())) {
-                            continue;
-                        }
-                        IconVo iconVo = new IconVo();
-                        iconVo.setClientId(dto.getClientId());
-                        iconVo.setIcon(dto.getCardIcon());
-                        iconVo.setName(dto.getCardName());
-                        iconVo.setLink(dto.getRedirectUrl());
-                        list.add(iconVo);
-                    }
-                } catch (Exception ignored) {
-                }
+                accessToken = session.getAccessToken();
             }
         }
 
-        // 3. 静态链接应用（始终可见）
-        if (blogConfiguration.getApplications() != null) {
-            list.addAll(blogConfiguration.getApplications());
+        List<OAuthAppCardDto> appList;
+        if (accessToken != null) {
+            appList = oauthClient.getAuthorizedAppNav(accessToken);
+        } else {
+            appList = oauthClient.getAppNav(memberTenantId);
         }
-
-        return Response.success(list);
+        return Response.success(appList);
     }
 
     /**
@@ -215,6 +209,43 @@ public class OAuthController {
         // 清除 cookie
         setHttpOnlyCookie(response, "REFRESH_TOKEN", "", 0);
         return Response.success();
+    }
+
+    private String generateAvatar(String name, String account) {
+        if (StringUtils.isBlank(name) || StringUtils.isBlank(account)) {
+            return null;
+        }
+        String path = blogConfiguration.getProfile() + "/avatar/" + account + ".jpg";
+        File avatarFile = new File(path);
+        if (avatarFile.exists()) {
+            return "/profile/avatar/" + account + ".jpg";
+        }
+        try {
+            String text = name.substring(0, 1);
+            BufferedImage image = new BufferedImage(128, 128, BufferedImage.TYPE_INT_RGB);
+            Graphics2D g2d = image.createGraphics();
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            Color backgroundColor = new Color(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
+            g2d.setColor(backgroundColor);
+            g2d.fillRect(0, 0, 128, 128);
+            double bgLuminance = 0.299 * backgroundColor.getRed() + 0.587 * backgroundColor.getGreen()
+                    + 0.114 * backgroundColor.getBlue();
+            g2d.setColor(bgLuminance < 128 ? Color.WHITE : Color.BLACK);
+            g2d.setFont(new Font("宋体", Font.BOLD, 64));
+            FontRenderContext context = g2d.getFontRenderContext();
+            Rectangle2D bounds = g2d.getFont().getStringBounds(text, context);
+            int x = (128 - (int) bounds.getWidth()) / 2;
+            int y = (128 - (int) bounds.getHeight()) / 2 - (int) bounds.getY();
+            g2d.drawString(text, x, y);
+            File avatarDir = avatarFile.getParentFile();
+            if (avatarDir.exists() || avatarDir.mkdirs()) {
+                ImageIO.write(image, "jpg", avatarFile);
+            }
+            g2d.dispose();
+        } catch (Exception e) {
+            return null;
+        }
+        return "/profile/avatar/" + account + ".jpg";
     }
 
     /**

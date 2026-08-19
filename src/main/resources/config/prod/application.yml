@@ -7,6 +7,7 @@ spring:
       appRedirectUri: ${oauth_app_redirect:http://10.64.4.74/oauth/callback?provider=cowave}
       oauthCodeUri: ${oauth_code_uri:http://10.64.4.74:81/oauth/cowave/authorize}
       oauthTokenUri: ${oauth_token_uri:http://10.64.4.74:19000}
+      memberTenantId: ${member_tenant_id:cowave}
 #    auth:
 #      enable: true
 #      mode: access
@@ -44,17 +45,3 @@ blog:
   pageStaticEnabled: false
   # 上传路径
   profile: public
-  # 默认应用列表
-  applications:
-    - icon: CompactDisc
-      name: 分享管理
-      link: /blog
-    - icon: Cloud
-      name: 系统管理
-      link: ${hub_admin_uri:http://10.64.4.74:81}
-    - icon: Fire
-      name: 在线工具
-      link: https://www.jyshare.com
-    - icon: LaptopCode
-      name: 今日资讯
-      link: https://hot.imsyy.top
